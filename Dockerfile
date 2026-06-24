@@ -1,7 +1,8 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod download
+# Отключаем базу данных контрольных сумм для этой сборки
+RUN GOPROXY=https://proxy.golang.org,direct GOSUMDB=off go mod download
 COPY main.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o site-core .
 
