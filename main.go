@@ -56,5 +56,11 @@ func main() {
 	err := http.ListenAndServe(":"+port, corsMiddleware(mux))
 	if err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
+		//Логика работы с бэкэндом.
+		// Указываем Go раздавать файлы из папки "frontend"
+fileServer := http.FileServer(http.Dir("./frontend"))
+
+// Все запросы, которые не начинаются с /api/, будут искать файлы в папке frontend
+mux.Handle("/", fileServer)
 	}
 }
