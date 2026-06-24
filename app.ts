@@ -14,7 +14,7 @@ class Dashboard {
     private messageInput: HTMLInputElement;
     private sendButton: HTMLButtonElement;
 
-    // Укажите URL вашего запущенного бэкенда на Render
+    // Ссылаемся на ваш живой сервер Render
     private backendUrl: string = "https://render-1-bq28.onrender.com";
 
     constructor() {
@@ -30,34 +30,64 @@ class Dashboard {
     }
 
     private init(): void {
-        this.addLog("Инициализация проверки связи с Render Go API...");
+        this.addLog("Инициализация системы мониторинга...");
         
-        // Сразу делаем первый запрос
+        // Первый запрос к бэкенду
         this.checkBackendStatus();
         
-        // Настраиваем периодический опрос (polling) каждые 10 секунд
+        // Каждые 10 секунд обновляем статус компонентов
         setInterval(() => this.checkBackendStatus(), 10000);
+
+        // Навешиваем событие клика на кнопку отправки
+        this.sendButton.addEventListener('click', () => this.sendMessageToQueue());
+        
+        // Позволяем отправлять сообщение по нажатию Enter в инпуте
+        this.messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                this.sendMessageToQueue();
+            }
+        });
     }
 
-    // Асинхронный метод для выполнения fetch-запроса
     private async checkBackendStatus(): Promise<void> {
         try {
-            const response = await fetch(`${this.backendUrl}/api/status`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Ошибка сервера: ${response.status}`);
-            }
-
+            const response = await fetch(`${this.backendUrl}/api/status`);
+            if (!response.ok) throw new Error(`Статус ответа: ${response.status}`);
+            
             const data: BackendStatus = await response.json();
             this.updateUI(data);
-
         } catch (error: any) {
             this.handleError(error.message || error);
+        }
+    }
+
+    // Метод отправки сообщения в очередь через ваш Go-бэкенд
+    private async sendMessageToQueue(): Promise<void> {
+        const message = this.messageInput.value.trim();
+        if (!message) return;
+
+        try {
+            this.sendButton.disabled = true;
+            this.addLog(`Отправка сообщения: "${message}"...`);
+
+            // Отправляем POST-запрос на бэкенд (убедитесь, что в Go настроен этот эндпоинт)
+            const response = await fetch(`${this.backendUrl}/api/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message })
+            });
+
+            if (response.ok) {
+                this.addLog(`[Успех] Сообщение доставлено в брокер RabbitMQ.`);
+                this.messageInput.value = ''; // Очищаем поле ввода
+            } else {
+                throw new Error(`Код ошибки бэкенда: ${response.status}`);
+            }
+        } catch (error: any) {
+            this.addLog(`[Ошибка отправки] Очередь недоступна: ${error.message}`);
+        } finally {
+            this.sendButton.disabled = false;
+            this.messageInput.focus();
         }
     }
 
@@ -76,16 +106,11 @@ class Dashboard {
 
         this.messageInput.disabled = false;
         this.sendButton.disabled = false;
-
-        this.addLog("Данные успешно синхронизированы с бэкендом.");
-        if (!data.redisConnected) {
-            this.addLog("[Предупреждение] Бэкенд работает без кэша Redis.");
-        }
     }
 
     private handleError(errorMessage: string): void {
         this.statusBadge.innerText = "Ошибка соединения";
-        this.statusBadge.className = "status-badge connecting"; // оранжевый/красный статус
+        this.statusBadge.className = "status-badge connecting";
 
         this.goCardState.innerText = "ОФФЛАЙН";
         this.goCardState.style.color = "#ef4444";
@@ -97,7 +122,7 @@ class Dashboard {
         this.messageInput.disabled = true;
         this.sendButton.disabled = true;
 
-        this.addLog(`[Ошибка] Не удалось связаться с бэкендом: ${errorMessage}`);
+        this.addLog(`[Ошибка связи] Сервер Render недоступен: ${errorMessage}`);
     }
 
     private addLog(text: string): void {
