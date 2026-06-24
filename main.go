@@ -4,19 +4,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	// ваши остальные импорты (amqp, redis и т.д.)
+	// Ваши остальные импорты (например, github.com/streadway/amqp и т.д.) здесь, если нужны
 )
 
 // Middleware для настройки CORS headers
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Разрешаем запросы с любого источника. 
-		// Для продакшена вместо "*" лучше указать конкретный URL вашего фронтенда
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Браузеры сначала отправляют предварительный запрос OPTIONS (Preflight)
+		// Обработка предварительного запроса браузера (Preflight OPTIONS)
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -29,13 +27,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 func main() {
 	// ... ваша логика инициализации Redis и RabbitMQ ...
 
-	// Создаем маршрутизатор (или используйте ваш существующий)
+	// 1. Создаем маршрутизатор
 	mux := http.NewServeMux()
-	
-	// Пример эндпоинта, который будет отдавать статус
+
+	// 2. Регистрируем API эндпоинт
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		// Отдаем JSON (в реальном коде проверяйте состояние переменных redisConnected и rabbitmqConnected)
 		w.Write([]byte(`{
 			"status": "live",
 			"redisConnected": false,
@@ -44,23 +41,22 @@ func main() {
 		}`))
 	})
 
-	// Определяем порт
+	// 3. Указываем Go раздавать статические HTML/CSS/JS файлы из папки "./frontend"
+	// ВАЖНО: Эта строчка должна быть ВНЕ блоков ошибок и ДО ListenAndServe
+	fileServer := http.FileServer(http.Dir("./frontend"))
+	mux.Handle("/", fileServer)
+
+	// 4. Определяем порт окружения Render
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "10000"
 	}
 
 	log.Printf("Запуск ядра сайта на порту %s...", port)
-	
-	// Оборачиваем наш маршрутизатор в CORS middleware
+
+	// 5. Запускаем сервер (оборачиваем маршруты в CORS)
 	err := http.ListenAndServe(":"+port, corsMiddleware(mux))
 	if err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
-		//Логика работы с бэкэндом.
-		// Указываем Go раздавать файлы из папки "frontend"
-fileServer := http.FileServer(http.Dir("./frontend"))
-
-// Все запросы, которые не начинаются с /api/, будут искать файлы в папке frontend
-mux.Handle("/", fileServer)
+		log.Fatalf("Критическая ошибка запуска сервера: %v", err)
 	}
 }
