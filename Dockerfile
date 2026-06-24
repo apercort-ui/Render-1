@@ -1,10 +1,10 @@
 # === ЭТАП 1: Сборка фронтенда (TypeScript) ===
+# === ЭТАП 1: Сборка фронтенда (TypeScript) ===
 FROM node:18-alpine AS frontend-builder
 WORKDIR /app
-# Копируем всё содержимое репозитория
 COPY . .
-# Устанавливаем TypeScript и компилируем app.ts в папку frontend/dist
-RUN npm install -g typescript && tsc
+# Явно компилируем конкретный файл app.ts и складываем результат в папку frontend/dist
+RUN npm install -g typescript && tsc frontend/app.ts --outDir frontend/dist --target es6
 
 # === ЭТАП 2: Сборка бэкенда (Go) ===
 FROM golang:1.22-alpine AS backend-builder
