@@ -1,100 +1,60 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	
-
-	"github.com/go-redis/redis/v8"
-	"github.com/streadway/amqp"
+	// ваши остальные импорты (amqp, redis и т.д.)
 )
 
-var (
-	ctx         = context.Background()
-	redisClient *redis.ClusterClient // или *redis.Client, для Upstash обычно используется стандартный
-	rdb         *redis.Client
-	rabbitConn  *amqp.Connection
-)
+// Middleware для настройки CORS headers
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Разрешаем запросы с любого источника. 
+		// Для продакшена вместо "*" лучше указать конкретный URL вашего фронтенда
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Браузеры сначала отправляют предварительный запрос OPTIONS (Preflight)
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
-	// 1. Получаем настройки из переменных окружения (Render + Сторонние сервисы)
+	// ... ваша логика инициализации Redis и RabbitMQ ...
+
+	// Создаем маршрутизатор (или используйте ваш существующий)
+	mux := http.NewServeMux()
+	
+	// Пример эндпоинта, который будет отдавать статус
+	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// Отдаем JSON (в реальном коде проверяйте состояние переменных redisConnected и rabbitmqConnected)
+		w.Write([]byte(`{
+			"status": "live",
+			"redisConnected": false,
+			"rabbitmqConnected": true,
+			"timestamp": "2026-06-24T18:23:53Z"
+		}`))
+	})
+
+	// Определяем порт
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Локальный порт для тестов
+		port = "10000"
 	}
-
-	redisURL := os.Getenv("REDIS_URL")
-	rabbitURL := os.Getenv("RABBITMQ_URL")
 
 	log.Printf("Запуск ядра сайта на порту %s...", port)
-
-	// 2. Инициализация внешнего Redis (например, Upstash)
-	if redisURL != "" {
-		opt, err := redis.ParseURL(redisURL)
-		if err != nil {
-			log.Printf("Ошибка парсинга REDIS_URL: %v", err)
-		} else {
-			rdb = redis.NewClient(opt)
-			// Проверяем подключение
-			_, err := rdb.Ping(ctx).Result()
-			if err != nil {
-				log.Printf("Не удалось подключиться к Redis: %v", err)
-			} else {
-				log.Println("Успешное подключение к Redis!")
-			}
-		}
-	} else {
-		log.Println("Предупреждение: REDIS_URL не задан. Работа без кэша.")
-	}
-
-	// 3. Инициализация RabbitMQ (например, CloudAMQP)
-	if rabbitURL != "" {
-		var err error
-		rabbitConn, err = amqp.Dial(rabbitURL)
-		if err != nil {
-			log.Printf("Не удалось подключиться к RabbitMQ: %v", err)
-		} else {
-			log.Println("Успешное подключение к RabbitMQ!")
-			defer rabbitConn.Close()
-		}
-	} else {
-		log.Println("Предупреждение: RABBITMQ_URL не задан. Очереди отключены.")
-	}
-
-	// 4. Настройка маршрутов (Эндпоинтов сайта)
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/health", healthHandler)
-
-	// 5. Запуск веб-сервера
-	serverAddr := fmt.Sprintf(":%s", port)
-	if err := http.ListenAndServe(serverAddr, nil); err != nil {
+	
+	// Оборачиваем наш маршрутизатор в CORS middleware
+	err := http.ListenAndServe(":"+port, corsMiddleware(mux))
+	if err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }
-
-// Главная страница сайта
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	// Пример работы с Redis (счетчик просмотров)
-	visits := "недоступно"
-	if rdb != nil {
-		val, err := rdb.Incr(ctx, "site_visits").Result()
-		if err == nil {
-			visits = fmt.Sprintf("%d", val)
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "<h1>Добро пожаловать на сайт!</h1><p>Ядро на Go работает внутри Docker.</p><p>Просмотров главной страницы через Redis: %s</p>", visits)
-}
-
-// Проверка работоспособности для Render (Health Check)
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
-}
-// Перезапуск сборки
-
-
