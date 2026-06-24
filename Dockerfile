@@ -1,14 +1,20 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 
-# Копируем go.mod
+# Копируем исправленный go.mod
 COPY go.mod ./
 
-# Запускаем tidy и выводим структуру окружения в логи
-RUN go mod tidy && echo "=== GO MOD OK ===" && ls -la
+# Теперь tidy создаст идеальный go.sum, так как модули жестко прописаны
+RUN go mod tidy
 
-# Копируем main.go
+# Копируем код и компилируем
 COPY main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o site-core .
 
-# Проверяем синтаксис main.go без сборки
-RUN go vet main.go
+# Финальный контейнер
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/site-core .
+EXPOSE 8080
+CMD ["./site-core"]
