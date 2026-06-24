@@ -1,19 +1,14 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
 
-# Копируем ТОЛЬКО go.mod (go.sum удален, его тут нет)
+# Копируем go.mod
 COPY go.mod ./
 
-# Принудительно генерируем чистый go.sum прямо внутри Docker
-RUN go mod tidy
+# Запускаем tidy и выводим структуру окружения в логи
+RUN go mod tidy && echo "=== GO MOD OK ===" && ls -la
 
-# Копируем код и собираем проект
+# Копируем main.go
 COPY main.go ./
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o site-core .
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/site-core .
-EXPOSE 8080
-CMD ["./site-core"]
+# Проверяем синтаксис main.go без сборки
+RUN go vet main.go
