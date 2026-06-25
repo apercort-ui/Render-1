@@ -36,10 +36,11 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Раздача статики
+	
+// Раздаем статику: index.html лежит в корне frontend, а скрипты в dist
 	fileServer := http.FileServer(http.Dir("./frontend"))
 	mux.Handle("/", fileServer)
-
+	mux.Handle("/dist/", fileServer)
 	// Эндпоинты API
 	mux.HandleFunc("/api/status", handleStatus)
 	mux.HandleFunc("/api/send", handleSendMessage)
