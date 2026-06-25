@@ -3,51 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site Core — Панель управления</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Site Core - Панель управления</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .status-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 400px; }
+        h1 { font-size: 1.2rem; color: #333; }
+        p { margin: 10px 0; font-weight: bold; }
+        span { float: right; }
+    </style>
 </head>
 <body>
-    <header class="main-header">
-        <h1>Система мониторинга Site-Core</h1>
-        <div id="connection-status" class="status-badge connecting">Подключение к бэкенду...</div>
-    </header>
 
-    <main class="dashboard-container">
-        <section class="status-cards">
-            <div class="card" id="go-core-card">
-                <h3>Go Backend</h3>
-                <p class="state">Ожидание...</p>
-            </div>
-            <div class="card" id="redis-card">
-                <h3>Redis Cache</h3>
-                <p class="state">Ожидание...</p>
-            </div>
-            <div class="card" id="rabbitmq-card">
-                <h3>RabbitMQ Broker</h3>
-                <p class="state">Ожидание...</p>
-            </div>
-            <div class="status-panel">
+<div class="status-panel">
+    <h1>Системная панель</h1>
     <p>Сервер: <span id="server-status" style="color: #2ecc71">ONLINE</span></p>
     <p>RabbitMQ: <span id="rabbit-status">ЗАГРУЗКА...</span></p>
     <p>PostgreSQL: <span id="postgres-status">ЗАГРУЗКА...</span></p>
     <p>Redis: <span id="redis-status">ЗАГРУЗКА...</span></p>
 </div>
-        </section>
 
-        <section class="console-section">
-            <h2>Отправка событий в RabbitMQ</h2>
-            <div class="control-group">
-                <input type="text" id="message-input" placeholder="Введите сообщение для брокера..." disabled>
-                <button id="send-btn" disabled>Отправить</button>
-            </div>
-            
-            <h2>Логи системы</h2>
-            <div id="log-console" class="console-box">
-                <div class="log-line system">[Система] Фронтенд успешно инициализирован.</div>
-            </div>
-        </section>
-    </main>
+<script src="dist/app.js"></script>
 
-    <script src="dist/app.js" defer></script>
 </body>
 </html>
