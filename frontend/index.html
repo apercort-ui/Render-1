@@ -2,15 +2,37 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Site Core - Панель управления</title>
+    <title>Site Core | Control Panel</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f1f5f9; }
+        body { font-family: 'Segoe UI', system-ui; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 40px; }
+        .container { width: 100%; max-width: 500px; }
+        .card { background: var(--card); padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h1 { margin-top: 0; font-size: 1.5rem; color: var(--accent); }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .status-item { background: #0f172a; padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #334155; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #logs { margin-top: 20px; font-family: monospace; font-size: 0.75rem; color: #94a3b8; height: 100px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; }
+    </style>
 </head>
 <body>
-    <div id="status-panel">
-        <h1>Система активна</h1>
-        <p>PostgreSQL: <span id="postgres-status">Загрузка...</span></p>
-        <p>RabbitMQ: <span id="rabbit-status">Загрузка...</span></p>
-    </div>
 
-    <script src="app.js"></script>
+<div class="container">
+    <div class="card">
+        <h1>Site Core Control</h1>
+        <div class="status-grid">
+            <div class="status-item">PG: <span id="postgres-status">...</span></div>
+            <div class="status-item">RMQ: <span id="rabbit-status">...</span></div>
+        </div>
+        
+        <input type="text" id="msgInput" placeholder="Введите сообщение...">
+        <button onclick="sendMessage()">Отправить в систему</button>
+        
+        <div id="logs">Система готова. Ожидание команд...</div>
+    </div>
+</div>
+
+<script src="dist/app.js"></script>
 </body>
 </html>
