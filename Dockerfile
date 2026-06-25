@@ -1,7 +1,7 @@
 FROM node:18-alpine AS frontend-builder
 WORKDIR /app
 COPY . .
-RUN npm install -g typescript && tsc frontend/app.ts --outDir frontend/dist
+RUN npm install -g typescript && tsc frontend/app.ts --outDir frontend/dist --target es6
 
 FROM golang:1.22-alpine AS backend-builder
 WORKDIR /app
