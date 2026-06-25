@@ -57,6 +57,29 @@ async function updateSystemStatus(): Promise<void> {
         console.error("Не удалось получить статус системы:", error);
     }
 }
+// Функция отправки данных
+async function sendMessage() {
+    const input = document.getElementById('msgInput') as HTMLInputElement;
+    const logs = document.getElementById('logs')!;
+    
+    if (!input.value) return;
+
+    try {
+        const response = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: input.value })
+        });
+        
+        const result = await response.json();
+        logs.innerHTML += `<div>> ${result.message}</div>`;
+        input.value = '';
+    } catch (e) {
+        logs.innerHTML += `<div style="color:red">> Ошибка отправки</div>`;
+    }
+}
+
+// ... (оставляем старую функцию updateSystemStatus для обновления статусов)
 
 // Запускаем опрос статуса при загрузке страницы и повторяем каждые 5 секунд
 document.addEventListener('DOMContentLoaded', () => {
