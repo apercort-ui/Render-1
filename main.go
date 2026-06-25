@@ -1,13 +1,12 @@
 package main
 
-import (
-	"encoding/json"
-	"errors"
-	"log"
-	"net/http"
-	"os"
+module site-core
 
-	"github.com/streadway/amqp" // Драйвер для работы с RabbitMQ
+go 1.22
+
+require (
+	github.com/lib/pq v1.10.9
+	github.com/streadway/amqp v1.1.0
 )
 
 // Структура для десериализации JSON от TypeScript
