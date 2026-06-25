@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"github.com/gorilla/websocket"
+	"os"
 )
 
 var upgrader = websocket.Upgrader{
@@ -37,12 +38,18 @@ func handleMessages() {
 }
 
 func main() {
-	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir("./frontend")))
-	mux.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("./frontend/dist"))))
-	mux.HandleFunc("/ws", handleConnections)
-	go handleMessages()
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "10000" // Дефолт для локальной разработки
+    }
 
-	log.Println("Сервер запущен на :10000")
-	http.ListenAndServe(":10000", mux)
+    mux := http.NewServeMux()
+    mux.Handle("/", http.FileServer(http.Dir("./frontend")))
+    mux.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("./frontend/dist"))))
+    mux.HandleFunc("/ws", handleConnections)
+    
+    go handleMessages()
+
+    log.Printf("Сервер запущен на порту %s", port)
+    log.Fatal(http.ListenAndServe(":"+port, mux))
 }
